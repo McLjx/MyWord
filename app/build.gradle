@@ -146,9 +146,9 @@ dependencies {
     implementation cardappDependencies.material
     implementation cardappDependencies.constraintlayout
 
-//    implementation project(path: ':app:mylibrary')
+    implementation project(path: ':mylibrary')
     testImplementation cardappDependencies.junits
     androidTestImplementation cardappDependencies.junit
     androidTestImplementation cardappDependencies.espressos
-    implementation cardappDependencies.MyWord
+//    implementation cardappDependencies.MyWord
 }
