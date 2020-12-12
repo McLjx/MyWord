@@ -2,23 +2,87 @@ plugins {
     id 'com.android.application'
 }
 
+
+
+/*Ⅰ 当前时间字符串变量，作为内部版本号的一部分，标示每个版本，每一天要sync一次该gradle以更新该变量；
+Ⅱ精确到小时，避免生成apk太多，也避免路径查找失败*/
+def InnerVersionName = new Date().format('yyMMdd')
+//爲Project加ext屬性進行引用
+def globalConfiguration = rootProject.extensions.getByName("ext")
+
+/**采用解析Properties文件获取签名信息的方式，把签名放进版本控制不是明智的做法*/
+Properties props = new Properties()
+props.load(new FileInputStream(file("signing.properties")))
+
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.2"
+
+    compileSdkVersion globalConfiguration.androidCompileSdkVersion
+    buildToolsVersion globalConfiguration.androidBuildToolsVersion
 
     defaultConfig {
         applicationId "com.ljx.helloworld"
-        minSdkVersion 16
-        targetSdkVersion 30
+        minSdkVersion globalConfiguration.androidMinSdkVersion
+        targetSdkVersion globalConfiguration.androidTargetSdkVersion
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        flavorDimensions "versionCode"
+//        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        /*上传奔溃信息到后台功能：关闭*/
+        buildConfigField "boolean", "CRASH_UPLOAD_SERVER_CAPABLE", "false"
+        /*后台是否接到正式接口：*/
+        buildConfigField "boolean", "SERVER_URL_OFFICIAL", "false"
+        /*商户测试接口：*/
+        buildConfigField "boolean", "WEBSERVICE_URL_MERCHANT", "false"
+        /*app名字 */
+        resValue "string", "app_name", "Smart cloud"
+
+        /*内部测试版本号：格式为[version]_[date]，适用于release和debug的buildtype*/
+        buildConfigField "String", "INNER_VERSION_NAME", "\"" + defaultConfig.versionName + "_" + "$InnerVersionName\""
     }
+
+    //签名配置
+    signingConfigs {
+        release {
+            keyAlias props['KEY_ALIAS']
+            keyPassword props['KEY_PASSWORD']
+            storeFile file(props['KEYSTORE_FILE'])
+            storePassword props['KEYSTORE_PASSWORD']
+        }
+
+    }
+    /*为apk自动替换生成新名字，格式如： [項目名]_[test/release]_[version]_[date].apk*/
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                // 输出apk名称为news_v1.0_2017-01-15_wandoujia.apk
+                def fileName = "news_v${defaultConfig.versionName}_${outputFile.name.replace("-debug", "_test").replace("app", "SmartCloud").replace("-prod", "").replace(".apk", "").replace("-", "_")}_${InnerVersionName}.apk"
+                outputFileName = fileName
+            }
+        }
+    }
+
 
     buildTypes {
         release {
-            minifyEnabled false
+            buildConfigField "boolean", "LOG_DEBUG", "false" //显示log
+            shrinkResources true  ////移除所有在工程中没有用到的资源
+            minifyEnabled true  //打开混淆  //移除所有未使用的方法、指令以减小 classes.dex 文件
+            zipAlignEnabled true //Zipalign优化
+            debuggable false
+
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+
+        }
+        debug{
+            buildConfigField "boolean", "LOG_DEBUG", "true" //不显示log
+
+            shrinkResources true
+            minifyEnabled true
+
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -26,15 +90,65 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    productFlavors {
+        GooglePlay {} //应用发布渠道名称
+
+        productFlavors.all { flavor ->
+            flavor.manifestPlaceholders = [UMENG_CHANNEL_VALUE: name]
+        }
+    }
+    //JDK配置，可忽略
+    //检测工具lint配置
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+
+    //配置任务dexdebug的选项：扩大使用内存防止OOM
+    dexOptions {
+        preDexLibraries = true
+//        incremental true
+        javaMaxHeapSize "10g"
+        dexInProcess = true
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/dependencies'
+        exclude 'META-INF/DEPENDENCIES.txt'
+        exclude 'META-INF/dependencies.txt'
+        exclude 'META-INF/LGPL2.1'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/license'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/notice'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/README.txt'
+        exclude 'META-INF/services/javax.annotation.processing.Processor'
+        exclude '!META-INF/MANIFEST.MF'
+        exclude 'META-INF/MANIFEST.MF'
+
+    }
 }
 
 dependencies {
 
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.google.android.material:material:1.2.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
-    implementation project(path: ':app:mylibrary')
-    testImplementation 'junit:junit:4.+'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    def cardappDependencies = rootProject.ext.cardappDependencies
+
+    implementation cardappDependencies.appcompat
+    implementation cardappDependencies.material
+    implementation cardappDependencies.constraintlayout
+
+//    implementation project(path: ':app:mylibrary')
+    testImplementation cardappDependencies.junits
+    androidTestImplementation cardappDependencies.junit
+    androidTestImplementation cardappDependencies.espressos
+    implementation cardappDependencies.MyWord
 }

@@ -1,0 +1,29 @@
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
+ext {
+    //Android sdk 基本版本
+
+    androidCompileSdkVersion = 30
+    androidBuildToolsVersion = "30.0.2"
+
+    androidMinSdkVersion = 16
+    androidTargetSdkVersion = 30
+
+
+
+
+    /**====智云库================*/
+
+    cardappDependencies = [
+            appcompat : "androidx.appcompat:appcompat:1.2.0",
+            material : "com.google.android.material:material:1.2.1",
+            constraintlayout : "androidx.constraintlayout:constraintlayout:2.0.4",
+            junits : "junit:junit:4.+",
+            junit : "androidx.test.ext:junit:1.1.2",
+            espressos : "androidx.test.espresso:espresso-core:3.3.0",
+            MyWord : "com.github.McLjx:MyWord:v1.0"
+    ]
+}

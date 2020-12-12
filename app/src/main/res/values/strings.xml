@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">My Word</string>
+
+    <string name="app_name_release" translatable="false">CardApp Sample</string>
+    <string name="app_name_test" translatable="false">CardApp Sample_test</string>
 </resources>
