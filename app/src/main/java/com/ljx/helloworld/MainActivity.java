@@ -14,7 +14,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         MyMainLibrary myMainLibrary=new MyMainLibrary();
-
+        /**
+         * 注释
+         */
         Log.d("=====",""+ myMainLibrary.getAge(3,9));
 
     }
