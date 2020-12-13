@@ -24,6 +24,6 @@ ext {
             junits : "junit:junit:4.+",
             junit : "androidx.test.ext:junit:1.1.2",
             espressos : "androidx.test.espresso:espresso-core:3.3.0",
-            MyWord : "com.github.McLjx:MyWord:v1.0"
+            MyWord : "com.github.McLjx:MyWord:1.0.1"
     ]
 }
